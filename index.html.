@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Custom AI - Your Rules Only</title>
+  <style>
+    body { font-family: Arial; background: #f0f0f0; padding: 20px; }
+    #chat { border: 1px solid #ccc; background: #fff; padding: 10px; height: 300px; overflow-y: scroll; }
+    #userInput { width: 70%; padding: 10px; }
+    #send { padding: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Custom AI - You Define Restrictions</h2>
+  <div id="chat"></div>
+  <input type="text" id="userInput" placeholder="Say something...">
+  <button id="send">Send</button>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const userInput = document.getElementById('userInput');
+    const send = document.getElementById('send');
+
+    // Memory for knowledge and custom restrictions
+    let memory = {};
+    let restrictions = [];
+
+    function addMessage(sender, message) {
+      chat.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function getResponse(input) {
+      const lower = input.toLowerCase();
+
+      // Teach knowledge: "teach: question = answer"
+      if(lower.startsWith("teach:")) {
+        const parts = input.substring(6).split("=");
+        if(parts.length === 2) {
+          const question = parts[0].trim().toLowerCase();
+          const answer = parts[1].trim();
+          memory[question] = answer;
+          return `Got it! I learned "${question}" → "${answer}"`;
+        } else {
+          return "Use format: teach: question = answer";
+        }
+      }
+
+      // Teach restriction: "restrict: phrase"
+      if(lower.startsWith("restrict:")) {
+        const phrase = input.substring(9).trim().toLowerCase();
+        if(phrase) {
+          restrictions.push(phrase);
+          return `Restriction added: I will avoid "${phrase}"`;
+        } else {
+          return "Use format: restrict: phrase";
+        }
+      }
+
+      // Check your custom restrictions
+      for(const phrase of restrictions) {
+        if(lower.includes(phrase)) {
+          return "I cannot respond due to your restriction.";
+        }
+      }
+
+      // Answer if known
+      if(memory[lower]) return memory[lower];
+
+      // Default reply if unknown
+      return "I don't know that yet. Teach me: teach: question = answer";
+    }
+
+    send.addEventListener('click', () => {
+      const input = userInput.value;
+      if(!input) return;
+      addMessage("You", input);
+      const response = getResponse(input);
+      addMessage("AI", response);
+      userInput.value = '';
+    });
+
+    userInput.addEventListener('keypress', (e) => {
+      if(e.key === 'Enter') send.click();
+    });
+  </script>
+</body>
+</html>
